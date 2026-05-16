@@ -17,7 +17,7 @@ CATALOG_BALANCER = cycle(CATALOG_URLS)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://frontend_service:5000")
 
 
-def next_catalog_url():
+def next_catalog_url(): 
     return next(CATALOG_BALANCER)
 
 
