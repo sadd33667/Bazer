@@ -1,0 +1,29 @@
+services:
+  catalog_service:
+    build: ./catalog_service
+    container_name: catalog_service
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./catalog_service:/app
+
+  order_service:
+    build: ./order_service
+    container_name: order_service
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./order_service:/app
+    depends_on:
+      - catalog_service
+
+  frontend_service:
+    build: ./frontend_service
+    container_name: frontend_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./frontend_service:/app
+    depends_on:
+      - catalog_service
+      - order_service
