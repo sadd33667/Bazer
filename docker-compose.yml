@@ -68,3 +68,4 @@ services:
       - catalog_service_2
       - order_service_1
       - order_service_2
+      

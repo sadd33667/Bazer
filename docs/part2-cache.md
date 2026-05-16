@@ -14,6 +14,7 @@ This push contains the first half of Lab 2:
 docker compose up --build 
 ```
 
+
 ## Test the cache
 
 First request should come from the catalog service:

@@ -11,7 +11,6 @@ CATALOG_URLS = [
     for url in os.getenv("CATALOG_URLS", "http://catalog_service_1:5001,http://catalog_service_2:5001").split(",")
     if url.strip()
 ]
-
 ORDER_URLS = [
     url.strip()
     for url in os.getenv("ORDER_URLS", "http://order_service_1:5002,http://order_service_2:5002").split(",")
