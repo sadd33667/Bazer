@@ -2,12 +2,23 @@ from flask import Flask, jsonify
 import requests
 import json
 import os
+from itertools import cycle
 
 app = Flask(__name__)
 
-ORDERS_FILE = "orders.json"
-CATALOG_URL = "http://catalog_service:5001"
+ORDERS_FILE = os.getenv("ORDERS_FILE", "orders.json")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "order_service")
+CATALOG_URLS = [
+    url.strip()
+    for url in os.getenv("CATALOG_URLS", "http://catalog_service_1:5001,http://catalog_service_2:5001").split(",")
+    if url.strip()
+]
+CATALOG_BALANCER = cycle(CATALOG_URLS)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://frontend_service:5000")
+
+
+def next_catalog_url():
+    return next(CATALOG_BALANCER)
 
 
 def load_orders():
@@ -26,7 +37,11 @@ def save_orders(data):
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Order service is working!"})
+    return jsonify({
+        "message": "Order service is working!",
+        "service": SERVICE_NAME,
+        "catalog_replicas": CATALOG_URLS
+    })
 
 
 @app.route("/purchase/<int:item_id>", methods=["POST", "GET"])
@@ -36,7 +51,8 @@ def purchase(item_id):
     except requests.RequestException:
         print(f"Could not invalidate frontend cache for item {item_id}")
 
-    info_response = requests.get(f"{CATALOG_URL}/info/{item_id}")
+    catalog_url = next_catalog_url()
+    info_response = requests.get(f"{catalog_url}/info/{item_id}")
 
     if info_response.status_code != 200:
         return jsonify({"error": "Book not found in catalog"}), 404
@@ -49,8 +65,8 @@ def purchase(item_id):
     new_quantity = book["quantity"] - 1
 
     update_response = requests.post(
-        f"{CATALOG_URL}/update/{item_id}",
-        json={"quantity": new_quantity}
+        f"{catalog_url}/update/{item_id}",
+        json={"quantity": new_quantity, "replicate": True}
     )
 
     if update_response.status_code != 200:
@@ -68,7 +84,8 @@ def purchase(item_id):
     return jsonify({
         "message": "Purchase successful",
         "book": book["title"],
-        "remaining_quantity": new_quantity
+        "remaining_quantity": new_quantity,
+        "served_by": SERVICE_NAME
     })
 
 

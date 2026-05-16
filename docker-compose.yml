@@ -1,29 +1,70 @@
 services:
-  catalog_service:
+  catalog_service_1:
     build: ./catalog_service
-    container_name: catalog_service
+    container_name: catalog_service_1
+    environment:
+      - SERVICE_NAME=catalog_service_1
+      - PEER_CATALOG_URLS=http://catalog_service_2:5001
     ports:
       - "5001:5001"
     volumes:
       - ./catalog_service:/app
 
-  order_service:
+  catalog_service_2:
+    build: ./catalog_service
+    container_name: catalog_service_2
+    environment:
+      - SERVICE_NAME=catalog_service_2
+      - DATA_FILE=catalog_replica_2.json
+      - PEER_CATALOG_URLS=http://catalog_service_1:5001
+    ports:
+      - "5003:5001"
+    volumes:
+      - ./catalog_service:/app
+
+  order_service_1:
     build: ./order_service
-    container_name: order_service
+    container_name: order_service_1
+    environment:
+      - SERVICE_NAME=order_service_1
+      - CATALOG_URLS=http://catalog_service_1:5001,http://catalog_service_2:5001
+      - FRONTEND_URL=http://frontend_service:5000
     ports:
       - "5002:5002"
     volumes:
       - ./order_service:/app
     depends_on:
-      - catalog_service
+      - catalog_service_1
+      - catalog_service_2
+
+  order_service_2:
+    build: ./order_service
+    container_name: order_service_2
+    environment:
+      - SERVICE_NAME=order_service_2
+      - ORDERS_FILE=orders_replica_2.json
+      - CATALOG_URLS=http://catalog_service_1:5001,http://catalog_service_2:5001
+      - FRONTEND_URL=http://frontend_service:5000
+    ports:
+      - "5004:5002"
+    volumes:
+      - ./order_service:/app
+    depends_on:
+      - catalog_service_1
+      - catalog_service_2
 
   frontend_service:
     build: ./frontend_service
     container_name: frontend_service
+    environment:
+      - CATALOG_URLS=http://catalog_service_1:5001,http://catalog_service_2:5001
+      - ORDER_URLS=http://order_service_1:5002,http://order_service_2:5002
     ports:
       - "5000:5000"
     volumes:
       - ./frontend_service:/app
     depends_on:
-      - catalog_service
-      - order_service
+      - catalog_service_1
+      - catalog_service_2
+      - order_service_1
+      - order_service_2

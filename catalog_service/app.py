@@ -1,10 +1,17 @@
 from flask import Flask, jsonify, request
 import json
 import os
+import requests
 
 app = Flask(__name__)
 
-DATA_FILE = "catalog.json"
+DATA_FILE = os.getenv("DATA_FILE", "catalog.json")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "catalog_service")
+PEER_CATALOG_URLS = [
+    url.strip()
+    for url in os.getenv("PEER_CATALOG_URLS", "").split(",")
+    if url.strip()
+]
 
 books_data = [
     {
@@ -79,7 +86,7 @@ def save_books(data):
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Catalog service is working!"})
+    return jsonify({"message": "Catalog service is working!", "service": SERVICE_NAME})
 
 @app.route("/search/<topic>")
 def search(topic):
@@ -98,14 +105,15 @@ def info(item_id):
             return jsonify({
                 "title": book["title"],
                 "quantity": book["quantity"],
-                "price": book["price"]
+                "price": book["price"],
+                "served_by": SERVICE_NAME
             })
     return jsonify({"error": "Book not found"}), 404
 
 @app.route("/update/<int:item_id>", methods=["POST"])
 def update(item_id):
     books = load_books()
-    data = request.get_json()
+    data = request.get_json() or {}
 
     for book in books:
         if book["id"] == item_id:
@@ -115,9 +123,31 @@ def update(item_id):
                 book["price"] = data["price"]
 
             save_books(books)
-            return jsonify({"message": "Book updated successfully"})
+
+            if data.get("replicate", True):
+                replicate_update(item_id, data)
+
+            return jsonify({
+                "message": "Book updated successfully",
+                "served_by": SERVICE_NAME
+            })
 
     return jsonify({"error": "Book not found"}), 404
+
+
+def replicate_update(item_id, data):
+    replicated_data = {
+        key: data[key]
+        for key in ("quantity", "price")
+        if key in data
+    }
+    replicated_data["replicate"] = False
+
+    for peer_url in PEER_CATALOG_URLS:
+        try:
+            requests.post(f"{peer_url}/update/{item_id}", json=replicated_data, timeout=2)
+        except requests.RequestException:
+            print(f"Could not replicate update for item {item_id} to {peer_url}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
