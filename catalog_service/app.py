@@ -34,6 +34,27 @@ books_data = [
         "topic": "undergraduate school",
         "quantity": 2,
         "price": 25
+    },
+    {
+        "id": 5,
+        "title": "How to finish Project 3 on time",
+        "topic": "distributed systems",
+        "quantity": 8,
+        "price": 45
+    },
+    {
+        "id": 6,
+        "title": "Why theory classes are so hard.",
+        "topic": "distributed systems",
+        "quantity": 6,
+        "price": 35
+    },
+    {
+        "id": 7,
+        "title": "Spring in the Pioneer Valley",
+        "topic": "undergraduate school",
+        "quantity": 5,
+        "price": 25
     }
 ]
 
@@ -42,7 +63,15 @@ def load_books():
         with open(DATA_FILE, "w") as f:
             json.dump(books_data, f, indent=4)
     with open(DATA_FILE, "r") as f:
-        return json.load(f)
+        books = json.load(f)
+
+    existing_ids = {book["id"] for book in books}
+    missing_books = [book for book in books_data if book["id"] not in existing_ids]
+    if missing_books:
+        books.extend(missing_books)
+        save_books(books)
+
+    return books
 
 def save_books(data):
     with open(DATA_FILE, "w") as f:

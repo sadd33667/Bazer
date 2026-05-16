@@ -7,6 +7,7 @@ app = Flask(__name__)
 
 ORDERS_FILE = "orders.json"
 CATALOG_URL = "http://catalog_service:5001"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://frontend_service:5000")
 
 
 def load_orders():
@@ -30,6 +31,11 @@ def home():
 
 @app.route("/purchase/<int:item_id>", methods=["POST", "GET"])
 def purchase(item_id):
+    try:
+        requests.post(f"{FRONTEND_URL}/cache/invalidate/{item_id}", timeout=2)
+    except requests.RequestException:
+        print(f"Could not invalidate frontend cache for item {item_id}")
+
     info_response = requests.get(f"{CATALOG_URL}/info/{item_id}")
 
     if info_response.status_code != 200:
