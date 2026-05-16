@@ -8,7 +8,7 @@ BASE_URL = "http://localhost:5000"
 REQUESTS_PER_TEST = 20
 
 
-def timed_request(method, path):
+def timed_request(method, path): 
     start = time.perf_counter()
     response = requests.request(method, f"{BASE_URL}{path}")
     elapsed_ms = (time.perf_counter() - start) * 1000

@@ -38,7 +38,7 @@ curl http://localhost:5003/info/1
 Order replica 1:
 
 ```bash
-curl http://localhost:5002/
+curl http://localhost:5002/ 
 ```
 
 Order replica 2:

@@ -11,7 +11,7 @@ This push contains the first half of Lab 2:
 ## Run
 
 ```bash
-docker compose up --build
+docker compose up --build 
 ```
 
 ## Test the cache
